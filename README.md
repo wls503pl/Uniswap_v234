@@ -1,3 +1,3 @@
-# Uniswap_v234
+# Uniswap_v2
 
-This project is a record of a systematic analysis of the code of three versions of Uniswap (v2, v3, v4).
+This project is a record of a systematic analysis of the code of Uniswap (v2）
