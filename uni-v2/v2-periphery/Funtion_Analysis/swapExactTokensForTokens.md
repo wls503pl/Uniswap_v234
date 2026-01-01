@@ -1,4 +1,4 @@
-# Uniswap V2 Functions:
+# Uniswap V2 Functions
 
 ## Overview
 
@@ -31,7 +31,7 @@ function swapExactTokensForTokens(
 | Parameter      | Type      | Description                                          | Example                      |
 | -------------- | --------- | ---------------------------------------------------- | ---------------------------- |
 | `amountIn`     | uint      | The exact amount of input token you're sending       | 1000 DAI                     |
-| `amountOutMin` | uint      | Minimum acceptable output (slippage protection)      | 24000 USDC                   |
+| `amountOutMin` | uint      | Minimum acceptable output (slippage protection)      | 988 USDC                     |
 | `path`         | address[] | Array of token addresses representing the swap route | [DAI, WETH, USDC]            |
 | `to`           | address   | Wallet address that receives the final output tokens | Your wallet address          |
 | `deadline`     | uint      | Unix timestamp when transaction expires if not mined | current_time + 600 (10 mins) |
@@ -47,8 +47,8 @@ An array containing the amount at each step of the swap:
 | Index        | Value | Meaning                     |
 | ------------ | ----- | --------------------------- |
 | `amounts[0]` | 1000  | Input amount (DAI)          |
-| `amounts[1]` | 25    | Output from 1st swap (WETH) |
-| `amounts[2]` | 24000 | Final output (USDC)         |
+| `amounts[1]` | 0.33  | Output from 1st swap (WETH) |
+| `amounts[2]` | 998   | Final output (USDC)         |
 
 **Key relationship**: `amounts.length == path.length` (both have 3 elements)
 
@@ -67,8 +67,8 @@ The library function calculates how much output you'll get at each step using Un
 For our example:
 
 -   You send 1000 DAI
--   DAI/WETH pair outputs 25 WETH
--   WETH/USDC pair outputs 24000 USDC
+-   DAI/WETH pair outputs 0.33 WETH
+-   WETH/USDC pair outputs 998 USDC
 
 #### Step 2: Verify Slippage Protection
 
@@ -77,9 +77,9 @@ require(amounts[amounts.length - 1] >= amountOutMin,
         'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
 ```
 
-This checks: `amounts[2] (24000) >= amountOutMin (24000)` ✓
+This checks: `amounts[2] (998) >= amountOutMin (988)` ✓
 
-**Why is this important?** Between when you submit your transaction and when it gets mined, market prices can change. This is called **slippage**. If the output drops below your minimum (e.g., to 23000 USDC), the transaction is rejected and you lose nothing. This protects you from sandwich attacks.
+**Why is this important?** Between when you submit your transaction and when it gets mined, market prices can change. This is called **slippage**. If the output drops below your minimum (e.g., to 950 USDC), the transaction is rejected and you lose nothing. This protects you from sandwich attacks.
 
 #### Step 3: Transfer Input Tokens to the First Pair
 
@@ -113,8 +113,8 @@ This internal function performs the actual token exchanges through each pair. De
 Protects against price fluctuations between transaction submission and execution.
 
 ```
-Scenario: You expect 24000 USDC but get only 23500 USDC due to price changes
-Solution: Set amountOutMin = 24000
+Scenario: You expect 998 USDC but get only 950 USDC due to price changes
+Solution: Set amountOutMin = 988
 Result: Transaction rejected, your DAI is returned safely
 ```
 
@@ -158,7 +158,7 @@ function _swap(
 
 | Parameter | Description                         | Example           |
 | --------- | ----------------------------------- | ----------------- |
-| `amounts` | Array of token amounts at each step | [1000, 25, 24000] |
+| `amounts` | Array of token amounts at each step | [1000, 0.33, 998] |
 | `path`    | Array of token addresses            | [DAI, WETH, USDC] |
 | `_to`     | Final recipient address             | Your wallet       |
 
@@ -172,13 +172,13 @@ The function loops through each trading pair in the path and executes swaps:
 Iteration 0:
   input = path[0] (DAI)
   output = path[1] (WETH)
-  amountOut = amounts[1] (25 WETH)
+  amountOut = amounts[1] (0.33 WETH)
   → Send output to: next pair (DAI/WETH → WETH/USDC)
 
 Iteration 1:
   input = path[1] (WETH)
   output = path[2] (USDC)
-  amountOut = amounts[2] (24000 USDC)
+  amountOut = amounts[2] (998 USDC)
   → Send output to: user's address (final recipient)
 ```
 
@@ -212,7 +212,7 @@ address to = i < path.length - 2 ?
 ```solidity
 swapExactTokensForTokens(
     1000,                                    // amountIn: 1000 DAI
-    24000,                                   // amountOutMin: Accept at least 24000 USDC
+    988,                                     // amountOutMin: Accept at least 988 USDC
     [0x6B17..., 0xC02a..., 0xA0b8...],      // path: DAI, WETH, USDC
     0xYourAddress,                           // to: Your wallet
     1735286400                               // deadline: Jan 1, 2025
@@ -224,12 +224,12 @@ swapExactTokensForTokens(
 **Step 1**: Calculate amounts
 
 -   `amounts[0]` = 1000 DAI (input)
--   `amounts[1]` = 25 WETH (intermediate)
--   `amounts[2]` = 24000 USDC (output)
+-   `amounts[1]` = 0.33 WETH (intermediate)
+-   `amounts[2]` = 998 USDC (output)
 
 **Step 2**: Check slippage
 
--   `amounts[2]` (24000) >= `amountOutMin` (24000) ✓
+-   `amounts[2]` (1000) >= `amountOutMin` (988) ✓
 
 **Step 3**: Transfer input
 
@@ -239,12 +239,12 @@ swapExactTokensForTokens(
 
 | Step | Input Pair | What Happens                     | Output Goes To |
 | ---- | ---------- | -------------------------------- | -------------- |
-| 0    | DAI/WETH   | Send 1000 DAI, receive 25 WETH   | WETH/USDC Pair |
-| 1    | WETH/USDC  | Send 25 WETH, receive 24000 USDC | Your Wallet    |
+| 0    | DAI/WETH   | Send 1000 DAI, receive 0.33 WETH | WETH/USDC Pair |
+| 1    | WETH/USDC  | Send 0.33 WETH, receive 998 USDC | Your Wallet    |
 
 ### Final Result
 
-Your wallet receives 24000 USDC
+Your wallet receives 998 USDC
 
 ---
 
